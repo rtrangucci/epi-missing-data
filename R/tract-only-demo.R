@@ -56,13 +56,13 @@ gen_fixed_data <- function(J) {
       K = K,
       X = X[1:N, ],
       prior_scales_beta = c(1, rep(2, 8) / sqrt(8)),
-      prior_scales_theta = c(1, rep(2, 8)),
+      prior_scales_gamma = c(1, rep(2, 8)),
       prior_mean_beta = c(0, c(-2, -1.0, -0.5, 0.0, 0.0, 0.5, 1.0, 1.0)),
-      prior_mean_theta = c(0, rep(0, 8)),
-      prior_scales_alpha = rep(1, J),
-      prior_scales_gamma = rep(2, J),
-      prior_mean_alpha = rep(-4.5, J),
-      prior_mean_gamma = rep(1, J)
+      prior_mean_gamma = c(0, rep(0, 8)),
+      prior_scales_log_lambda = rep(1, J),
+      prior_scales_eta = rep(2, J),
+      prior_mean_log_lambda = rep(-4.5, J),
+      prior_mean_eta = rep(1, J)
     )
   return(
     list(
@@ -97,7 +97,7 @@ simu_curate <- function(simu_data, fixed_data) {
   J <- fixed_data$stan_data$J
   pars <- posterior::as_draws_df(
     simu_data$draws(
-      variables = c("theta", "gamma", "beta", "alpha")
+      variables = c("gamma", "eta", "beta", "log_lambda")
     )
   )
   y_obs <- posterior::as_draws_df(
@@ -154,7 +154,7 @@ fit_mod <- function(model, data) {
   )
   pars <- posterior::as_draws_df(
     fit$draws(
-      variables = c("theta", "gamma", "beta", "alpha")
+      variables = c("gamma", "eta", "beta", "log_lambda")
     )
   )
   true <- data$true_pars
@@ -226,15 +226,15 @@ z_score_pars <- function(draws, true, true_prior_var) {
 ## @return matrices of coverage, shrinkage, z-scores and sampling diagnostics
 ##         across all model fits
 parse_fits <- function(ensemble_fits, fixed_data) {
-  theta_prior_var <- fixed_data$stan_data$prior_scales_theta^2
   gamma_prior_var <- fixed_data$stan_data$prior_scales_gamma^2
+  eta_prior_var <- fixed_data$stan_data$prior_scales_eta^2
   beta_prior_var <- fixed_data$stan_data$prior_scales_beta^2
-  alpha_prior_var <- fixed_data$stan_data$prior_scales_alpha^2
+  log_lambda_prior_var <- fixed_data$stan_data$prior_scales_log_lambda^2
   prior_vars <- c(
-    theta_prior_var,
     gamma_prior_var,
+    eta_prior_var,
     beta_prior_var,
-    alpha_prior_var
+    log_lambda_prior_var
   )
   S <- length(ensemble_fits)
   n_vars <- length(prior_vars)
@@ -331,7 +331,7 @@ make_regr_shrink_zscore_plot <- function(data, post_data) {
     abline(h = -2)
   }
   for (k in 1:K) {
-    nm <- paste0("theta[", k, "]")
+    nm <- paste0("gamma[", k, "]")
     plot(post_data$shrink[, nm],
       post_data$z_scores[, nm],
       xlim = c(0, 1),
@@ -355,7 +355,7 @@ make_rate_shrink_zscore_plot <- function(data, post_data) {
   K <- data$K
   J <- data$J
   for (k in 1:J) {
-    nm <- paste0("alpha[", k, "]")
+    nm <- paste0("log_lambda[", k, "]")
     plot(post_data$shrink[, nm],
       post_data$z_scores[, nm],
       xlim = c(0, 1),
@@ -368,7 +368,7 @@ make_rate_shrink_zscore_plot <- function(data, post_data) {
     abline(h = -2)
   }
   for (k in 1:J) {
-    nm <- paste0("gamma[", k, "]")
+    nm <- paste0("eta[", k, "]")
     plot(post_data$shrink[, nm],
       post_data$z_scores[, nm],
       xlim = c(0, 1),
