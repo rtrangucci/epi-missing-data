@@ -5,22 +5,22 @@ functions {
   }
 }
 data {
-  int<lower=2> J;
-  int<lower=0> N;
-  int<lower=0> K;
-  matrix[N,J] E;
-  matrix[N, K] X;
-  vector<lower=0>[K] prior_scales_beta;
-  vector<lower=0>[K] prior_scales_theta;
-  vector[K] prior_mean_beta;
-  vector[K] prior_mean_theta;
-  vector<lower=0>[J] prior_scales_alpha;
-  vector<lower=0>[J] prior_scales_gamma;
-  vector[J] prior_mean_alpha;
-  vector[J] prior_mean_gamma;
+  int<lower=2> J; // Number of categories in variable with missingness (e.g. race)
+  int<lower=0> N; // Number of strata observed (e.g. number of age-sex strata)
+  int<lower=0> K; // Dimensions of stratum-specific predictors
+  matrix[N,J] E; // Population counts for stratum by category 
+  matrix[N, K] X; // Predictor matrix
+  vector<lower=0>[K] prior_scales_beta; // Prior scales for disease-log-rate coefficients
+  vector<lower=0>[K] prior_scales_gamma; // Prior scales for log-odds-of-observation coefficients
+  vector[K] prior_mean_beta; // Prior means for disease-log-rate coefficients
+  vector[K] prior_mean_gamma; // Prior means for log-odds-of-observation coefficients
+  vector<lower=0>[J] prior_scales_log_lambda; // Prior scales for disease-log-rate by category 
+  vector<lower=0>[J] prior_scales_eta; // Prior scales for log-odds-of-observation by category
+  vector[J] prior_mean_log_lambda;// Prior means for disease-log-rate by category 
+  vector[J] prior_mean_eta;// Prior means for log-odds-of-observation by category
 
-  int<lower=0> y_miss[N];
-  int<lower=0> y_obs[N,J];
+  int<lower=0> y_miss[N]; // Number of cases missing category information by stratum
+  int<lower=0> y_obs[N,J]; // Number of cases observed by stratum and cateogry
 }
 transformed data {
   real tot_pop;
@@ -31,30 +31,30 @@ transformed data {
   tot_pop = sum(pop_by_cat);
 }
 parameters {
-  vector[J] alpha;
+  vector[J] log_lambda;
   vector[K] beta;
   // Bernoulli parameters
-  vector[J] gamma;
-  vector[K] theta;
+  vector[J] eta;
+  vector[K] gamma;
 }
 model {
   matrix[N,J] mu_pois;
   matrix[N,J] mu_bern;
   // Poisson parameters
   beta ~ normal(prior_mean_beta, prior_scales_beta);
-  alpha ~ normal(prior_mean_alpha, prior_scales_alpha);
+  log_lambda ~ normal(prior_mean_log_lambda, prior_scales_log_lambda);
 
   // Binomial parameters
+  eta ~ normal(prior_mean_eta, prior_scales_eta);
   gamma ~ normal(prior_mean_gamma, prior_scales_gamma);
-  theta ~ normal(prior_mean_theta, prior_scales_theta);
   for (j in 1:J) {
-    mu_pois[,j] = X * beta + alpha[j];
+    mu_pois[,j] = X * beta + log_lambda[j];
     for (n in 1:N)
       if (E[n,j] > 0)
         y_obs[n,j] ~ poisson_log(log(E[n,j]) + mu_pois[n,j]);
   }
   for (j in 1:J) {
-    mu_bern[,j] = X * theta + gamma[j];
+    mu_bern[,j] = X * gamma + eta[j];
     for (n in 1:N)
       y_obs[n,j] ~ binomial_logit(y_obs[n,j],mu_bern[n,j]);
   }
@@ -80,7 +80,7 @@ model {
 //     matrix[N,J] mu_pois;
 //     matrix[N,J] mu_bern;
 //     for (j in 1:J) { 
-//       mu_pois[,j] = X * beta + alpha[j];
+//       mu_pois[,j] = X * beta + log_lambda[j];
 //       for (n in 1:N)
 //         if (E[n,j] > 0)
 //           y_latent[n,j] = poisson_safe_rng(E[n,j] * exp(mu_pois[n,j]));
@@ -88,7 +88,7 @@ model {
 //           y_latent[n,j] = 0;
 //     }
 //     for (j in 1:J) {
-//       mu_bern[,j] = X * theta + gamma[j];
+//       mu_bern[,j] = X * gamma + eta[j];
 //       for (n in 1:N)
 //         y_obs[n,j] = binomial_rng(y_latent[n,j],inv_logit(mu_bern[n,j]));
 //     }
