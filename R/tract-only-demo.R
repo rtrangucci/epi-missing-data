@@ -388,7 +388,7 @@ sim_model <- cmdstan_model("stan/simu-simple-regr-model.stan")
 ## compile inferential model
 inf_model <- cmdstan_model("stan/simple-no-dp-regr-prior.stan")
 ## Read fixed data
-fixed_data <  readRDS("data/fixed-data.RDS")
+fixed_data <-  readRDS("data/fixed-data.RDS")
 
 ## Generate 2 simulated datasets
 fake_data <- gen_data_random(sim_model, 2, fixed_data$stan_data)
