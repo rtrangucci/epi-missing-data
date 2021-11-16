@@ -1,23 +1,25 @@
 functions {
+  // Function to generate Poisson distributed random variables
+  // that does not throw an exception for large eta
   int poisson_safe_rng(real eta) {
     real eta2 = (log(eta) < 20.79) ? log(eta) : 20.79;
     return poisson_log_rng(eta2);
   }
 }
 data {
-  int<lower=2> J;
-  int<lower=0> N;
-  int<lower=0> K;
-  matrix[N,J] E;
-  matrix[N, K] X;
-  vector<lower=0>[K] prior_scales_beta;
-  vector<lower=0>[K] prior_scales_theta;
-  vector[K] prior_mean_beta;
-  vector[K] prior_mean_theta;
-  vector<lower=0>[J] prior_scales_alpha;
-  vector<lower=0>[J] prior_scales_gamma;
-  vector[J] prior_mean_alpha;
-  vector[J] prior_mean_gamma;
+  int<lower=2> J; // Number of categories in variable with missingness (e.g. race)
+  int<lower=0> N; // Number of strata observed (e.g. number of age-sex strata)
+  int<lower=0> K; // Dimensions of stratum-specific predictors
+  matrix[N,J] E; // Population counts for stratum by category 
+  matrix[N, K] X; // Predictor matrix
+  vector<lower=0>[K] prior_scales_beta; // Prior scales for disease-log-rate coefficients
+  vector<lower=0>[K] prior_scales_gamma; // Prior scales for log-odds-of-observation coefficients
+  vector[K] prior_mean_beta; // Prior means for disease-log-rate coefficients
+  vector[K] prior_mean_gamma; // Prior means for log-odds-of-observation coefficients
+  vector<lower=0>[J] prior_scales_log_lambda; // Prior scales for disease-log-rate by category 
+  vector<lower=0>[J] prior_scales_eta; // Prior scales for log-odds-of-observation by category
+  vector[J] prior_mean_log_lambda;// Prior means for disease-log-rate by category 
+  vector[J] prior_mean_eta;// Prior means for log-odds-of-observation by category
 }
 transformed data {
   real tot_pop;
@@ -29,34 +31,35 @@ transformed data {
 }
 generated quantities {
   // Poisson parameters
-  vector[J] alpha;
+  vector[J] log_lambda;
   vector[K] beta;
   // Bernoulli parameters
-  vector[J] gamma;
-  vector[K] theta;
+  vector[J] eta;
+  vector[K] gamma;
   int y_obs[N,J];
   int y_tot[N];
   int y_miss[N];
   int N_miss;
   int idx_miss[N] = rep_array(0,N);
   int miss_count;
-  real miss_prop;
-  real incidence;
-  vector[J] incidence_by_cat;
+  real miss_prop; // Proportion of observations that are missing
+  real incidence; // True overall incidence 
+  vector[J] incidence_by_cat; // True incidence by category
+  // log- and logit-scale parameters by stratum by category
   matrix[N,J] mu_pois;
   matrix[N,J] mu_bern;
   {
     int y_latent[N,J];
     for (k in 1:K) {
       beta[k] = normal_rng(prior_mean_beta[k], prior_scales_beta[k]);
-      theta[k] = normal_rng(prior_mean_theta[k], prior_scales_theta[k]);
+      gamma[k] = normal_rng(prior_mean_gamma[k], prior_scales_gamma[k]);
     }
     for (j in 1:J) {
-      alpha[j] = normal_rng(prior_mean_alpha[j], prior_scales_alpha[j]);
-      gamma[j] = normal_rng(prior_mean_gamma[j], prior_scales_gamma[j]);
+      log_lambda[j] = normal_rng(prior_mean_log_lambda[j], prior_scales_log_lambda[j]);
+      eta[j] = normal_rng(prior_mean_eta[j], prior_scales_eta[j]);
     }
     for (j in 1:J) { 
-      mu_pois[,j] = X * beta + alpha[j];
+      mu_pois[,j] = X * beta + log_lambda[j];
       for (n in 1:N)
         if (E[n,j] > 0)
           y_latent[n,j] = poisson_safe_rng(E[n,j] * exp(mu_pois[n,j]));
@@ -64,7 +67,7 @@ generated quantities {
           y_latent[n,j] = 0;
     }
     for (j in 1:J) {
-      mu_bern[,j] = X * theta + gamma[j];
+      mu_bern[,j] = X * gamma + eta[j];
       for (n in 1:N)
         y_obs[n,j] = binomial_rng(y_latent[n,j],inv_logit(mu_bern[n,j]));
     }
