@@ -7,54 +7,28 @@ library(posterior)
 ## Generates regression design matrix and population totals
 ## for model, to be fixed across simulation runs
 ## This function defines the prior hyperparameters
-gen_fixed_data <- function(J) {
-  N <- 18
-  if (J < 2 || J > 6) {
-    stop("J must be in [2,6]")
-  }
-  fl <- "~/state-work/mi-covid-maps/all_tracts_mi_all_21_04_23_expand_other.csv"
-  all <-
-    read_csv(fl) %>%
-    mutate(
-      age_fac = as.factor(coarse_bins),
-      gender_fac = as.factor(gender),
-      age_sex_fac = interaction(age_fac, gender_fac),
-      age_sex_idx = as.integer(age_sex_fac),
-      gender_idx = as.integer(gender_fac),
-      age_idx = as.integer(age_fac),
-      tract = paste0(
-        stringr::str_sub(GISJOIN, 2, 3),
-        stringr::str_sub(GISJOIN, 5, 7),
-        stringr::str_sub(GISJOIN, 9, 14)
-      )
-    ) %>%
-    filter(county %in% c("wayne")) %>%
-    mutate(
-      tract_idx = as.integer(as.factor(tract))
-    )
+gen_fixed_data <- function() {
+  all <- readRDS("data/pop_data_for_sim.RDS")
 
-  set.seed(123)
-  tbl <- all[all$tract == "26163565300", ]
-  N_obs <- data.matrix(tbl[, c(
+  tbl <- all[all$puma_idx == 1, ]
+  E <- data.matrix(tbl[, c(
     "pop_black", "pop_latino", "pop_other",
     "pop_asian", "pop_native", "pop_white"
   )])
 
   X <- model.matrix(~ 1 + gender_fac + age_fac,
     tbl,
-    ## contrasts = list(age_fac = "contr.sum")
     )[, -1] %>% as.matrix()
-  ## X[1:14,1] <- 0
-  ## X[15,1] <- 1
   K <- ncol(X)
 
+  J <- ncol(E)
   stan_dat <-
     list(
       J = J,
-      N = N,
-      E = N_obs[1:N, ],
+      N = nrow(E),
+      E = E,
       K = K,
-      X = X[1:N, ],
+      X = X,
       prior_scales_beta = c(1, rep(2, 8) / sqrt(8)),
       prior_scales_gamma = c(1, rep(2, 8)),
       prior_mean_beta = c(0, c(-2, -1.0, -0.5, 0.0, 0.0, 0.5, 1.0, 1.0)),
@@ -62,7 +36,15 @@ gen_fixed_data <- function(J) {
       prior_scales_log_lambda = rep(1, J),
       prior_scales_eta = rep(2, J),
       prior_mean_log_lambda = rep(-4.5, J),
-      prior_mean_eta = rep(1, J)
+      prior_mean_eta = rep(1, J),
+      prior_scales_beta_fit = c(1, rep(2, 8) / sqrt(8)),
+      prior_scales_gamma_fit = c(1, rep(2, 8)),
+      prior_mean_beta_fit = c(0, c(-2, -1.0, -0.5, 0.0, 0.0, 0.5, 1.0, 1.0)),
+      prior_mean_gamma_fit = c(0, rep(0, 8)),
+      prior_scales_log_lambda_fit = rep(1, J),
+      prior_scales_eta_fit = rep(2, J),
+      prior_mean_log_lambda_fit = rep(-4.5, J),
+      prior_mean_eta_fit = rep(1, J)
     )
   return(
     list(
@@ -388,7 +370,7 @@ sim_model <- cmdstan_model("stan/simu-simple-regr-model.stan")
 ## compile inferential model
 inf_model <- cmdstan_model("stan/simple-no-dp-regr-prior.stan")
 ## Read fixed data
-fixed_data <-  readRDS("data/fixed-data.RDS")
+fixed_data <-  gen_fixed_data()
 
 ## Generate 2 simulated datasets
 fake_data <- gen_data_random(sim_model, 2, fixed_data$stan_data)

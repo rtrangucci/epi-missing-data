@@ -10,14 +10,14 @@ data {
   int<lower=0> K; // Dimensions of stratum-specific predictors
   matrix[N,J] E; // Population counts for stratum by category 
   matrix[N, K] X; // Predictor matrix
-  vector<lower=0>[K] prior_scales_beta; // Prior scales for disease-log-rate coefficients
-  vector<lower=0>[K] prior_scales_gamma; // Prior scales for log-odds-of-observation coefficients
-  vector[K] prior_mean_beta; // Prior means for disease-log-rate coefficients
-  vector[K] prior_mean_gamma; // Prior means for log-odds-of-observation coefficients
-  vector<lower=0>[J] prior_scales_log_lambda; // Prior scales for disease-log-rate by category 
-  vector<lower=0>[J] prior_scales_eta; // Prior scales for log-odds-of-observation by category
-  vector[J] prior_mean_log_lambda;// Prior means for disease-log-rate by category 
-  vector[J] prior_mean_eta;// Prior means for log-odds-of-observation by category
+  vector<lower=0>[K] prior_scales_beta_fit; // Prior scales for disease-log-rate coefficients
+  vector<lower=0>[K] prior_scales_gamma_fit; // Prior scales for log-odds-of-observation coefficients
+  vector[K] prior_mean_beta_fit; // Prior means for disease-log-rate coefficients
+  vector[K] prior_mean_gamma_fit; // Prior means for log-odds-of-observation coefficients
+  vector<lower=0>[J] prior_scales_log_lambda_fit; // Prior scales for disease-log-rate by category 
+  vector<lower=0>[J] prior_scales_eta_fit; // Prior scales for log-odds-of-observation by category
+  vector[J] prior_mean_log_lambda_fit;// Prior means for disease-log-rate by category 
+  vector[J] prior_mean_eta_fit;// Prior means for log-odds-of-observation by category
 
   int<lower=0> y_miss[N]; // Number of cases missing category information by stratum
   int<lower=0> y_obs[N,J]; // Number of cases observed by stratum and cateogry
@@ -41,12 +41,12 @@ model {
   matrix[N,J] mu_pois;
   matrix[N,J] mu_bern;
   // Poisson parameters
-  beta ~ normal(prior_mean_beta, prior_scales_beta);
-  log_lambda ~ normal(prior_mean_log_lambda, prior_scales_log_lambda);
+  beta ~ normal(prior_mean_beta_fit, prior_scales_beta_fit);
+  log_lambda ~ normal(prior_mean_log_lambda_fit, prior_scales_log_lambda_fit);
 
   // Binomial parameters
-  eta ~ normal(prior_mean_eta, prior_scales_eta);
-  gamma ~ normal(prior_mean_gamma, prior_scales_gamma);
+  eta ~ normal(prior_mean_eta_fit, prior_scales_eta_fit);
+  gamma ~ normal(prior_mean_gamma_fit, prior_scales_gamma_fit);
   for (j in 1:J) {
     mu_pois[,j] = X * beta + log_lambda[j];
     for (n in 1:N)
