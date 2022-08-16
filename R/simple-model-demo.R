@@ -4,6 +4,26 @@ library(ggplot2)
 library(readr)
 library(posterior)
 
+## Checks for local identifiability
+## of model given a population matrix E
+## and a predictor matrix X
+## @param E matrix of population counts
+## @param X Predictor matrix
+## @return boolean value for identifiability
+check_identifiability <- function(E, X) {
+  J <- ncol(E)
+  K <- ncol(X)
+  x_list <- list()
+  for (j in 1:J) 
+    x_list[[j]] <- diag(E[, j]) %*% X
+  tot_x <- do.call(cbind, x_list)
+  rank <- qr(cbind(E, tot_x))$rank
+  identified <- (rank > (J + K)) & (qr(X)$rank == K) & (qr(E)$rank == J) & (nrow(E) >= J + K) & all(rowSums(E) > 0)
+  return(
+      identified
+  )
+}
+
 ## Generates regression design matrix and population totals
 ## for model, to be fixed across simulation runs
 ## This function defines the prior hyperparameters
@@ -366,11 +386,13 @@ make_rate_shrink_zscore_plot <- function(data, post_data) {
 }
 
 ## compile simulation model
-sim_model <- cmdstan_model("stan/simu-simple-regr-model.stan")
+sim_model <- cmdstan_model("stan/simu-simple-model.stan")
 ## compile inferential model
-inf_model <- cmdstan_model("stan/simple-no-dp-regr-prior.stan")
+inf_model <- cmdstan_model("stan/simple-model.stan")
 ## Read fixed data
 fixed_data <-  gen_fixed_data()
+## Check local identifiability
+with(fixed_data$stan_data, check_identifiability(E, X))
 
 ## Generate 2 simulated datasets
 fake_data <- gen_data_random(sim_model, 2, fixed_data$stan_data)
