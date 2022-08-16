@@ -1,5 +1,3 @@
 ## Instructions
 
-Create a new top-level directory called data
-
-Put all datasets into the data directory
+Example code from https://arxiv.org/abs/2206.08161
