@@ -18,7 +18,8 @@ functions {
     return n_miss * log(dot_product(to_vector(E), filt_lambda));
   }
   // structure of y: First 4 elements:
-  // {# of race/ethnicity categories,
+  // {
+  //  # of race/ethnicity categories,
   //  # of observations per geographic unit (18 age x sex categories),
   //  # of data points per observation (J counts of cases by race/ethnicity,
   //                       1 count of cases without race/ethnicity info,
@@ -145,7 +146,25 @@ transformed data {
       rep_array(0.0, N_geo, max(obs_per_geo) * (J + K));
   {
     /*
-      Loop through the data array
+      Loop through the data and build the array for observations by geographic unit of analysis
+      Structure of elements of geo_data array:
+      {
+      First 4 elements:
+        {
+          # of race/ethnicity categories (J),
+          # of observations per geographic unit (18 age x sex categories),
+          # of data points per observation (J counts of cases by race/ethnicity,
+                              1 count of cases without race/ethnicity info,
+                              1 age-sex category),
+          Dimension of predictors
+
+          }
+          For each age-sex category within a geographic unit:
+          (Count of cases observed with race 1, Count of cases observed with race 2, \dots,
+           Count of cases observed with race J, Count of cases missing race, index for age-sex category)
+        }
+       Structure of the elements of E_geo: For each age-sex category within geographic unit
+       (E_ig, z_ig): Vector of population counts by race, vector predictors
     */
     array[N_geo] int idx_ind = rep_array(1, N_geo);
     for (n in 1 : N) {
