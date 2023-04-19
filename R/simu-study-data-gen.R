@@ -125,8 +125,6 @@ gen_fixed_data <- function(obs_prop) {
       sex_idx = all$gender_idx,
       N_age_sex = 18,
       age_sex_idx = all$age_sex_idx,
-      geo_idx = all$geo_idx,
-      N_geo = length(unique(all$geo_ind)),
       obs_per_geo = all$obs_p_geo,
       X_means = colMeans(X),
       alpha_beta_fixed_old = c(-0.5, c(-2, -1.0, -0.5, 0.0, 0.0, 0.5, 1.0, 1.0)),
