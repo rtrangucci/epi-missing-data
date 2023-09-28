@@ -97,7 +97,7 @@ gen_fixed_data <- function(obs_prop) {
       E = N_obs,
       K = K,
       X = X_cent,
-      Q = X_cent,
+      Z = X_cent,
       geo_idx = all$geo_idx,
       N_geo = length(unique(all$geo_idx)),
       prior_scales_alpha_beta = c(1, rep(1, 8)),
