@@ -1,21 +1,21 @@
 functions {
   // compensate for numerical over/underflow
-  int poisson_log_safe_rng(real eta) {
-    real eta2 = (eta < 20.79) ? eta : 20.79;
-    return poisson_log_rng(eta2);
+  int poisson_log_safe_rng(real log_rate) {
+    real log_rate2 = (log_rate < 20.79) ? log_rate : 20.79;
+    return poisson_log_rng(log_rate2);
   }
   // following Carpenter on forums
-  real binomial_pois_lpmf(int y_obs, real log_theta, real logit_p) {
+  real binomial_pois_lpmf(int y_obs, real log_rate, real logit_p) {
     return binomial_logit_lpmf(y_obs | y_obs, logit_p)
-           + poisson_log_lpmf(y_obs | log_theta);
+           + poisson_log_lpmf(y_obs | log_rate);
   }
   // different than appendix I
-  real miss_lpmf(int n_miss, vector log_theta_j, vector logit_p,
+  real miss_lpmf(int n_miss, vector log_rate, vector logit_p,
                  array[] real E) {
     int J = rows(logit_p);
     
-    vector[J] filt_lambda = (1 - inv_logit(logit_p)) .* exp(log_theta_j);
-    return n_miss * log(dot_product(to_vector(E), filt_lambda));
+    vector[J] filt_rate = (1 - inv_logit(logit_p)) .* exp(log_rate);
+    return n_miss * log(dot_product(to_vector(E), filt_rate));
   }
   // structure of y: First 4 elements:
   // {
