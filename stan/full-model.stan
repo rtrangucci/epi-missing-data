@@ -72,7 +72,6 @@ data {
   int<lower=0> J;
   array[N, J] int y;
   array[N, J] real E;
-
   array[N] int<lower=0> n_miss;
 
   int<lower=1> K;
@@ -88,14 +87,13 @@ data {
   array[N] int<lower=1, upper=N_geo> geo_idx;
   array[N] int<lower=1, upper=N_age_sex> obs_per_geo;
   row_vector[K] X_means;
-
   vector<lower=0>[K] prior_scales_alpha_beta;
   vector<lower=0>[K] prior_scales_alpha_gamma;
   vector[K] prior_mean_alpha_gamma;
   vector<lower=0>[J] prior_scales_alpha_lambda;
   vector<lower=0>[J] prior_scales_alpha_eta;
   vector[J] prior_mean_alpha_eta;
-
+  
   // Hierarchical variance parameters
   vector<lower=0>[J] prior_mean_sigma_lambda;
   vector<lower=0>[J] prior_scales_sigma_lambda;
@@ -106,10 +104,10 @@ data {
   vector[K] prior_mean_sigma_gamma;
   vector[K] prior_scales_sigma_gamma;
   // end hierarchical variance parameters
-
+  
   vector[K] prior_mean_alpha_beta;
   vector[J] prior_mean_alpha_lambda;
-
+  
   int<lower=1> N_county;
   array[N] int<lower=1, upper=N_county> county_idx;
   array[N_geo] int<lower=1, upper=N_county> county_idx_by_geo;

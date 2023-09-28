@@ -219,6 +219,7 @@ simu_curate <- function(simu_data, fixed_data) {
 
 sim_model <- cmdstan_model("stan/simu-hier-regr-model-fixed-par.stan")
 sim_prior_model <- cmdstan_model("stan/simu-hier-regr-model-w-inc.stan")
+
 prior_fixed_data <- gen_fixed_data(0.9)
 prior_pred <- gen_data_random(sim_prior_model, 1000, prior_fixed_data$stan_data)
 prior_summary <- prior_pred$summary(variables = c(
@@ -230,12 +231,16 @@ prior_summary <- prior_pred$summary(variables = c(
   "age_sex_inc",
   "alpha_lambda"
 ))
+
 sds <- prior_summary %>%
   filter(grepl("incidence_by_race",variable) | grepl("age_sex_inc",variable)) %>%
   select(variable,sd)
 vars_to_save <- sds$sd
 names(vars_to_save) <- sds$variable
-saveRDS(vars_to_save, file = "great-lakes-simu-study/prior_vars_simu.RDS")
+
+dir.create("simdata")
+
+saveRDS(vars_to_save, file = "simdata/prior_vars_simu.RDS")
 prop_miss_sim <- prior_pred$draws(
   variables = c("miss_prop", "incidence"),
   format = "draws_matrix"
@@ -304,7 +309,7 @@ for (i in seq_along(schedule_nms)) {
   sims_sum[[i]] <- df_sim_sum
 
   tt <- simu_curate(fake_data, fixed_data)
-  saveRDS(tt, file = paste0("great-lakes-simu-study/","data_",nm_i,".RDS"))
+  saveRDS(tt, file = paste0("simdata/","data_",nm_i,".RDS"))
 }
 sims_sum <- bind_rows(sims_sum) 
 gp_nms <- data.frame(
@@ -313,8 +318,8 @@ gp_nms <- data.frame(
 )
 sims_sum <- sims_sum %>%
   left_join(gp_nms, by = "gp_num")
-saveRDS(sims_sum, file = "great-lakes-simu-study/simulated-data-summary.RDS")
+saveRDS(sims_sum, file = "simdata/simulated-data-summary.RDS")
 prop_miss_sim <- fake_data$draws(variables = c("miss_prop", "incidence"),
                                  format = "draws_matrix")
-saveRDS(fixed_data, file = "great-lakes-simu-study/fixed_data_simu.RDS")
+saveRDS(fixed_data, file = "simdata/fixed_data_simu.RDS")
 
