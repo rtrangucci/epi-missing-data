@@ -1,21 +1,21 @@
 functions {
   // compensate for numerical over/underflow
-  int poisson_log_safe_rng(real eta) {
-    real eta2 = (eta < 20.79) ? eta : 20.79;
-    return poisson_log_rng(eta2);
+  int poisson_log_safe_rng(real log_rate) {
+    real log_rate2 = (log_rate < 20.79) ? log_rate : 20.79;
+    return poisson_log_rng(log_rate2);
   }
   // following Carpenter on forums
-  real binomial_pois_lpmf(int y_obs, real log_theta, real logit_p) {
+  real binomial_pois_lpmf(int y_obs, real log_rate, real logit_p) {
     return binomial_logit_lpmf(y_obs | y_obs, logit_p)
-           + poisson_log_lpmf(y_obs | log_theta);
+           + poisson_log_lpmf(y_obs | log_rate);
   }
   // different than appendix I
-  real miss_lpmf(int n_miss, vector log_theta_j, vector logit_p,
+  real miss_lpmf(int n_miss, vector log_rate, vector logit_p,
                  array[] real E) {
     int J = rows(logit_p);
     
-    vector[J] filt_lambda = (1 - inv_logit(logit_p)) .* exp(log_theta_j);
-    return n_miss * log(dot_product(to_vector(E), filt_lambda));
+    vector[J] filt_rate = (1 - inv_logit(logit_p)) .* exp(log_rate);
+    return n_miss * log(dot_product(to_vector(E), filt_rate));
   }
   // structure of y: First 4 elements:
   // {
@@ -72,7 +72,6 @@ data {
   int<lower=0> J;
   array[N, J] int y;
   array[N, J] real E;
-
   array[N] int<lower=0> n_miss;
 
   int<lower=1> K;
@@ -88,14 +87,13 @@ data {
   array[N] int<lower=1, upper=N_geo> geo_idx;
   array[N] int<lower=1, upper=N_age_sex> obs_per_geo;
   row_vector[K] X_means;
-
   vector<lower=0>[K] prior_scales_alpha_beta;
   vector<lower=0>[K] prior_scales_alpha_gamma;
   vector[K] prior_mean_alpha_gamma;
   vector<lower=0>[J] prior_scales_alpha_lambda;
   vector<lower=0>[J] prior_scales_alpha_eta;
   vector[J] prior_mean_alpha_eta;
-
+  
   // Hierarchical variance parameters
   vector<lower=0>[J] prior_mean_sigma_lambda;
   vector<lower=0>[J] prior_scales_sigma_lambda;
@@ -106,10 +104,10 @@ data {
   vector[K] prior_mean_sigma_gamma;
   vector[K] prior_scales_sigma_gamma;
   // end hierarchical variance parameters
-
+  
   vector[K] prior_mean_alpha_beta;
   vector[J] prior_mean_alpha_lambda;
-
+  
   int<lower=1> N_county;
   array[N] int<lower=1, upper=N_county> county_idx;
   array[N_geo] int<lower=1, upper=N_county> county_idx_by_geo;
