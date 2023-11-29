@@ -19,7 +19,7 @@ gen_data_multi_cat <- function(N, J, theta, p) {
   )
 }
 
-mod_miss <- cmdstan_model("binomial-binomial-model.stan")
+mod_miss <- cmdstan_model("stan/binomial-binomial-model.stan")
 
 set.seed(3326)
 dat <- gen_data_multi_cat(1000, 3, c(0.8,0.3,0.2), c(0.8, 0.95, 0.85))
