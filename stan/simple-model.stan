@@ -19,8 +19,8 @@ data {
   vector[J] prior_mean_log_lambda_fit;// Prior means for disease-log-rate by category 
   vector[J] prior_mean_eta_fit;// Prior means for log-odds-of-observation by category
 
-  int<lower=0> y_miss[N]; // Number of cases missing category information by stratum
-  int<lower=0> y_obs[N,J]; // Number of cases observed by stratum and cateogry
+  array[N] int<lower=0> y_miss; // Number of cases missing category information by stratum
+  array[N,J] int<lower=0> y_obs; // Number of cases observed by stratum and cateogry
 }
 transformed data {
   real tot_pop;
@@ -66,17 +66,17 @@ model {
   }
 }
 // generated quantities {
-//   int y_obs[N,J];
-//   int y_tot[N];
-//   int y_miss[N];
+//   array[N,J] int y_obs;
+//   array[N] int y_tot;
+//   array[N] int y_miss;
 //   int N_miss;
-//   int idx_miss[N] = rep_array(0,N);
+//   array[N] int idx_miss = rep_array(0,N);
 //   int miss_count;
 //   real miss_prop;
 //   real incidence;
 //   vector[J] incidence_by_cat;
 //   {
-//     int y_latent[N,J];
+//     array[N,J] int y_latent;
 //     matrix[N,J] mu_pois;
 //     matrix[N,J] mu_bern;
 //     for (j in 1:J) { 

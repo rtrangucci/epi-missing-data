@@ -36,11 +36,11 @@ generated quantities {
   // Bernoulli parameters
   vector[J] eta;
   vector[K] gamma;
-  int y_obs[N,J];
-  int y_tot[N];
-  int y_miss[N];
+  array[N,J] int y_obs;
+  array[N] int y_tot;
+  array[N] int y_miss;
   int N_miss;
-  int idx_miss[N] = rep_array(0,N);
+  array[N] int idx_miss = rep_array(0,N);
   int miss_count;
   real miss_prop; // Proportion of observations that are missing
   real incidence; // True overall incidence 
@@ -49,7 +49,7 @@ generated quantities {
   matrix[N,J] mu_pois;
   matrix[N,J] mu_bern;
   {
-    int y_latent[N,J];
+    array[N,J] int y_latent;
     for (k in 1:K) {
       beta[k] = normal_rng(prior_mean_beta[k], prior_scales_beta[k]);
       gamma[k] = normal_rng(prior_mean_gamma[k], prior_scales_gamma[k]);
